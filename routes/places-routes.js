@@ -17,8 +17,15 @@ const DUMMY_PLACES = [
 
 router.get('/:pid', (req, res, next) => {
   const placeId = req.params.pid
+  console.log(`[PLACES: /:pid] GET /${placeId}`)
   const place = DUMMY_PLACES.find(p => p.id === placeId)
-  console.log('[PLACES] GET /')
+  res.json({ place })
+})
+
+router.get('/user/:uid', (req, res, next) => {
+  const userId = req.params.uid
+  console.log(`[PLACES: /user/:uid] GET /${userId}`)
+  const place = DUMMY_PLACES.find(p => p.creator === userId)
   res.json({ place })
 })
 
