@@ -4,7 +4,7 @@ const router = express.Router()
 const placeController = require('../controllers/place-controllers')
 
 router.get('/:pid', placeController.getPlaceById)
-router.get('/user/:uid', placeController.getPlaceByUserId)
+router.get('/user/:uid', placeController.getPlacesByUserId)
 
 router.post('/', placeController.createPlace)
 
