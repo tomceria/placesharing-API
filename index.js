@@ -2,13 +2,15 @@ const express = require('express')
 const bodyParser = require('body-parser')
 
 const HttpError = require('./models/http-error')
-const placesRoutes = require('./routes/places-routes')
+const placeRoutes = require('./routes/place-routes')
+const userRoutes = require('./routes/user-routes')
 
 const app = express()
 app.use(bodyParser.json())
 
 // Route Handlers
-app.use('/api/places', placesRoutes)
+app.use('/api/place', placeRoutes)
+app.use('/api/user', userRoutes)
 
 // Undefined route Handler
 app.use((req, res, next) => {
