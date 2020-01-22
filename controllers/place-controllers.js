@@ -1,5 +1,6 @@
 const uuid = require('uuid/v4')
 const { validationResult } = require('express-validator')
+const { getCoordsForAddress } = require('../utils/location-utils')
 
 const HttpError = require('../models/http-error')
 
@@ -44,8 +45,8 @@ const createPlace = (req, res, next) => {
     console.log(errors)
     return next(new HttpError('Invalid inputs.', 422))
   }
-  const { title, description, location, address, creator } = req.body
-  const newPlace = { id: uuid(), title, description, location, address, creator }
+  const { title, description, address, creator } = req.body
+  const newPlace = { id: uuid(), title, description, location: getCoordsForAddress(address), address, creator }
   DUMMY_PLACES.push(newPlace)
   res
     .status(201)
