@@ -45,14 +45,7 @@ const createPlace = (req, res, next) => {
     return next(new HttpError('Invalid inputs.', 422))
   }
   const { title, description, location, address, creator } = req.body
-  const newPlace = {
-    id: uuid(),
-    title,
-    description,
-    location,
-    address,
-    creator
-  }
+  const newPlace = { id: uuid(), title, description, location, address, creator }
   DUMMY_PLACES.push(newPlace)
   res
     .status(201)
@@ -62,6 +55,11 @@ const createPlace = (req, res, next) => {
 const updatePlace = (req, res, next) => {
   const placeId = req.params.pid
   console.log(`[PLACES: /:pid] PATCH /${placeId}`)
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    console.log(errors)
+    return next(new HttpError('Invalid inputs.', 422))
+  }
   if (DUMMY_PLACES.filter(place => place.id === placeId).length <= 0) {
     return next(new HttpError('Could not find a place for the provided pid.'), 404)
   }
@@ -79,7 +77,7 @@ const updatePlace = (req, res, next) => {
 const deletePlace = (req, res, next) => {
   const placeId = req.params.pid
   console.log(`[PLACES: /:pid] DELETE /${placeId}`)
-  if (DUMMY_PLACES.filter(place => place.id === placeId).length <= 0) {
+  if (!DUMMY_PLACES.find(place => place.id === placeId)) {
     return next(new HttpError('Could not find a place for the provided pid.'), 404)
   }
   DUMMY_PLACES = DUMMY_PLACES.filter(place => place.id !== placeId)

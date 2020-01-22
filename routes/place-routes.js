@@ -15,7 +15,12 @@ router.post('/',
   ],
   placeController.createPlace)
 
-router.patch('/:pid', placeController.updatePlace)
+router.patch('/:pid',
+  [
+    check('title').not().isEmpty().withMessage('is required'),
+    check('description').isLength({ min: 5 }).withMessage('must be at least 5 characters long')
+  ],
+  placeController.updatePlace)
 
 router.delete('/:pid', placeController.deletePlace)
 

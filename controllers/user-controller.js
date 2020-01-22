@@ -1,4 +1,5 @@
 const uuid = require('uuid/v4')
+const { validationResult } = require('express-validator')
 
 const HttpError = require('../models/http-error')
 
@@ -18,6 +19,11 @@ const getAllUsers = (req, res, next) => {
 
 const performSignUp = (req, res, next) => {
   console.log('[USERS: /] POST /signup')
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    console.log(errors)
+    return next(new HttpError('Invalid inputs.', 422))
+  }
   const { name, email, password } = req.body
   if (DUMMY_USERS.find(user => user.email === email)) {
     return next(new HttpError('Email already exists', 422))
@@ -31,6 +37,11 @@ const performSignUp = (req, res, next) => {
 
 const performLogIn = (req, res, next) => {
   console.log('[USERS: /] POST /login')
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    console.log(errors)
+    return next(new HttpError('Invalid inputs.', 422))
+  }
   const { email, password } = req.body
   // Temporary Authentication
   const identifiedUser = DUMMY_USERS.find(user => user.email === email)
