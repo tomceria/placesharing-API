@@ -1,4 +1,5 @@
 const uuid = require('uuid/v4')
+const { validationResult } = require('express-validator')
 
 const HttpError = require('../models/http-error')
 
@@ -38,6 +39,11 @@ const getPlacesByUserId = (req, res, next) => {
 
 const createPlace = (req, res, next) => {
   console.log('[PLACES: /] POST /')
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    console.log(errors)
+    return next(new HttpError('Invalid inputs.', 422))
+  }
   const { title, description, location, address, creator } = req.body
   const newPlace = {
     id: uuid(),
