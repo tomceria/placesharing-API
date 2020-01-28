@@ -1,9 +1,12 @@
 const express = require('express')
 const bodyParser = require('body-parser')
+const mongoose = require('mongoose')
 
 const HttpError = require('./models/http-error')
 const placeRoutes = require('./routes/place-routes')
 const userRoutes = require('./routes/user-routes')
+
+const dbURI = 'mongodb://hoangluuminh:Cara123!@localhost:27017/placesharing?authSource=admin'
 
 const app = express()
 app.use(bodyParser.json())
@@ -28,4 +31,11 @@ app.use((error, req, res, next) => {
     .json({ message: error.message || 'An unknown error occured' })
 })
 
-app.listen(5000)
+mongoose
+  .connect(dbURI)
+  .then(() => {
+    app.listen(5000)
+  })
+  .catch((error) => {
+    console.log(error)
+  })
