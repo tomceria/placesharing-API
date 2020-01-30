@@ -1,8 +1,9 @@
-const uuid = require('uuid/v4')
 const { validationResult } = require('express-validator')
 const { getCoordsForAddress } = require('../utils/location-utils')
+const LoggingUtil = require('../utils/logging-utils')
 
 const HttpError = require('../models/http-error')
+const Place = require('../models/place')
 
 let DUMMY_PLACES = [
   {
@@ -18,10 +19,17 @@ let DUMMY_PLACES = [
   }
 ]
 
-const getPlaceById = (req, res, next) => {
+const getPlaceById = async (req, res, next) => {
   const placeId = req.params.pid
+  console.log(`placeId: ${placeId}`)
   console.log(`[PLACES: /:pid] GET /${placeId}`)
-  const place = DUMMY_PLACES.find(p => p.id === placeId)
+  // Validations
+  let place
+  try {
+    place = await Place.findById(placeId).exec()
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('getPlaceById', error)
+  }
   if (!place) {
     return next(new HttpError('Could not find a place for the provided pid.', 404))
   }
@@ -38,19 +46,35 @@ const getPlacesByUserId = (req, res, next) => {
   res.json({ places })
 }
 
-const createPlace = (req, res, next) => {
+const createPlace = async (req, res, next) => {
   console.log('[PLACES: /] POST /')
+  // Validations
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
-    console.log(errors)
-    return next(new HttpError('Invalid inputs.', 422))
+    LoggingUtil.getUserReqMessage('createPlace', errors)
+    return res.status(422).json(errors)
   }
+  // Declarations
   const { title, description, address, creator } = req.body
-  const newPlace = { id: uuid(), title, description, location: getCoordsForAddress(address), address, creator }
-  DUMMY_PLACES.push(newPlace)
+  const newPlace = new Place({
+    title,
+    description,
+    address,
+    location: getCoordsForAddress(),
+    image: 'https://external-preview.redd.it/rAu9SdsqxWCmiA3NKT75q_zAz2lvXYPoXp6MTORGe9c.jpg',
+    creator
+  })
+  let result = {}
+  // Execute
+  try {
+    result = await newPlace.save()
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('createPlace', error)
+    return next(new HttpError('Creating new Place unsuccessful', 500))
+  }
   res
     .status(201)
-    .json({ place: newPlace })
+    .json({ place: result })
 }
 
 const updatePlace = (req, res, next) => {
