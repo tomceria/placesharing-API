@@ -10,13 +10,13 @@ router.post('/signup',
   [
     check('name').not().isEmpty().withMessage('is required'),
     check('email').normalizeEmail().isEmail().withMessage('has invalid format'),
-    check('password').isLength({ min: 5 }).withMessage('must be at least 5 characters long')
+    check('password').isLength({ min: 6 }).withMessage('must be at least 5 characters long')
   ],
   userController.performSignUp)
 router.post('/login',
   [
     check('email').isEmail().withMessage('has invalid format'),
-    check('password').isLength({ min: 5 }).withMessage('must be at least 5 characters long')
+    check('password').isLength({ min: 6 }).withMessage('must be at least 5 characters long')
   ],
   userController.performLogIn)
 
