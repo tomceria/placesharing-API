@@ -5,20 +5,6 @@ const LoggingUtil = require('../utils/logging-utils')
 const HttpError = require('../models/http-error')
 const Place = require('../models/place')
 
-let DUMMY_PLACES = [
-  {
-    id: 'p1',
-    title: 'Empire State Building',
-    description: 'One of the most famous sky scrapers in the world!',
-    location: {
-      lat: 40.7484474,
-      lng: -73.9871516
-    },
-    address: '20 W 34th St, New York, NY 10001',
-    creator: 'u1'
-  }
-]
-
 const getPlaceById = async (req, res, next) => {
   const placeId = req.params.pid
   console.log(`placeId: ${placeId}`)
@@ -26,24 +12,32 @@ const getPlaceById = async (req, res, next) => {
   // Validations
   let place
   try {
-    place = await Place.findById(placeId).exec()
+    place = await Place.findById(placeId)
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('getPlaceById', error)
   }
   if (!place) {
     return next(new HttpError('Could not find a place for the provided pid.', 404))
   }
-  res.json({ place })
+  // Execute
+  res.json({ place: place.toObject({ getters: true }) })
 }
 
-const getPlacesByUserId = (req, res, next) => {
+const getPlacesByUserId = async (req, res, next) => {
   const userId = req.params.uid
   console.log(`[PLACES: /user/:uid] GET /${userId}`)
-  const places = DUMMY_PLACES.filter(p => p.creator === userId)
-  if (!places || places.length <= 0) {
-    throw new HttpError('Could not find a place for the provided uid.', 404)
+  // Validation
+  let places = []
+  try {
+    places = await Place.find({ creator: userId })
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('getPlacesByUserId', error)
   }
-  res.json({ places })
+  if (!places || places.length <= 0) {
+    return next(new HttpError('Could not find a place for the provided uid.', 404))
+  }
+  // Execute
+  res.json({ places: places.map(place => place.toObject({ getters: true })) })
 }
 
 const createPlace = async (req, res, next) => {
@@ -74,38 +68,62 @@ const createPlace = async (req, res, next) => {
   }
   res
     .status(201)
-    .json({ place: result })
+    .json({ place: result.toObject({ getters: true }) })
 }
 
-const updatePlace = (req, res, next) => {
+const updatePlace = async (req, res, next) => {
   const placeId = req.params.pid
   console.log(`[PLACES: /:pid] PATCH /${placeId}`)
+  // Validations
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
-    console.log(errors)
-    return next(new HttpError('Invalid inputs.', 422))
+    LoggingUtil.getUserReqMessage('updatePlace', errors)
+    return res.status(422).json(errors)
   }
-  if (DUMMY_PLACES.filter(place => place.id === placeId).length <= 0) {
+  let updatedPlace
+  try {
+    updatedPlace = await Place.findById(placeId)
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('updatePlace', error)
+  }
+  if (!updatedPlace) {
     return next(new HttpError('Could not find a place for the provided pid.'), 404)
   }
+  // Declarations
   const { title, description } = req.body
-  const updatedPlace = { ...DUMMY_PLACES.find(p => p.id === placeId) }
-  const placeIndex = DUMMY_PLACES.findIndex(p => p.id === placeId)
+  let result = null
+  // Execute
   updatedPlace.title = title
   updatedPlace.description = description
-  DUMMY_PLACES[placeIndex] = updatedPlace
+  try {
+    result = await updatedPlace.save()
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('updatePlace', error)
+  }
   res
     .status(200)
-    .json({ place: updatedPlace })
+    .json({ place: result.toObject({ getters: true }) })
 }
 
-const deletePlace = (req, res, next) => {
+const deletePlace = async (req, res, next) => {
   const placeId = req.params.pid
   console.log(`[PLACES: /:pid] DELETE /${placeId}`)
-  if (!DUMMY_PLACES.find(place => place.id === placeId)) {
+  // Validations
+  let deletedPlace
+  try {
+    deletedPlace = await Place.findById(placeId)
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('deleted', error)
+  }
+  if (!deletedPlace) {
     return next(new HttpError('Could not find a place for the provided pid.'), 404)
   }
-  DUMMY_PLACES = DUMMY_PLACES.filter(place => place.id !== placeId)
+  // Execute
+  try {
+    await deletedPlace.remove()
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('deleted', error)
+  }
   res
     .status(200)
     .send()

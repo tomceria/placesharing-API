@@ -12,8 +12,8 @@ const app = express()
 app.use(bodyParser.json())
 
 // Route Handlers
-app.use('/api/place', placeRoutes)
-app.use('/api/user', userRoutes)
+app.use('/api/places', placeRoutes)
+app.use('/api/users', userRoutes)
 
 // Undefined route Handler
 app.use((req, res, next) => {
