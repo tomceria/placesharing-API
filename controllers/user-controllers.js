@@ -1,7 +1,8 @@
-const uuid = require('uuid/v4')
 const { validationResult } = require('express-validator')
+const LoggingUtil = require('../utils/logging-utils')
 
 const HttpError = require('../models/http-error')
+const User = require('../models/user')
 
 const DUMMY_USERS = [
   {
@@ -17,22 +18,43 @@ const getAllUsers = (req, res, next) => {
   res.json({ users: DUMMY_USERS })
 }
 
-const performSignUp = (req, res, next) => {
+const performSignUp = async (req, res, next) => {
   console.log('[USERS: /] POST /signup')
+  // Validations
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
-    console.log(errors)
-    return next(new HttpError('Invalid inputs.', 422))
+    LoggingUtil.getUserReqMessage('performSignUp', errors)
+    return res.status(422).json(errors)
   }
-  const { name, email, password } = req.body
-  if (DUMMY_USERS.find(user => user.email === email)) {
-    return next(new HttpError('Email already exists', 422))
+  const { name, email, password, places } = req.body
+  let existingUser
+  try {
+    existingUser = await User.findOne({ email: email })
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('performSignUp', error)
   }
-  const newUser = { id: uuid(), name, email, password }
-  DUMMY_USERS.push(newUser)
+  if (existingUser) {
+    return next(new HttpError('Email already exists.'), 404)
+  }
+  // Declarations
+  const newUser = new User({
+    name,
+    email,
+    image: 'https://img.icons8.com/bubbles/2x/user.png',
+    password,
+    places
+  })
+  let result = {}
+  // Execute
+  try {
+    result = await newUser.save()
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('performSignUp', error)
+    return next(new HttpError('Signing Up unsuccessful', 500))
+  }
   res
     .status(201)
-    .json({ user: newUser })
+    .json({ user: result.toObject({ getters: true }) })
 }
 
 const performLogIn = (req, res, next) => {

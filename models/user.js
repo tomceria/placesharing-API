@@ -19,8 +19,11 @@ const userSchema = Schema({
   image: {
     type: String,
     required: true
+  },
+  places: {
+    type: String,
+    required: true
   }
-  // places:
 })
 
 userSchema.plugin(uniqueValidator)
