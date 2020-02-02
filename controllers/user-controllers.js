@@ -4,18 +4,17 @@ const LoggingUtil = require('../utils/logging-utils')
 const HttpError = require('../models/http-error')
 const User = require('../models/user')
 
-const DUMMY_USERS = [
-  {
-    id: 'u1',
-    name: 'Hoang',
-    email: 'test@test.com',
-    password: 'hoang124'
-  }
-]
-
-const getAllUsers = (req, res, next) => {
+const getAllUsers = async (req, res, next) => {
   console.log('[USERS: /] GET /')
-  res.json({ users: DUMMY_USERS })
+  // Declarations
+  let users = []
+  try {
+    users = await User.find({}, '-password')
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('getAllUsers', error)
+    return next(new HttpError('Retrieving users unsuccessful. Please try again later', 500))
+  }
+  res.json({ users: users.map(user => user.toObject()) })
 }
 
 const performSignUp = async (req, res, next) => {
@@ -32,6 +31,7 @@ const performSignUp = async (req, res, next) => {
     existingUser = await User.findOne({ email: email })
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('performSignUp', error)
+    return next(new HttpError('Signing up unsuccessful. Please try again later', 500))
   }
   if (existingUser) {
     return next(new HttpError('Email already exists.'), 404)
@@ -50,32 +50,37 @@ const performSignUp = async (req, res, next) => {
     result = await newUser.save()
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('performSignUp', error)
-    return next(new HttpError('Signing Up unsuccessful', 500))
+    return next(new HttpError('Signing up unsuccessful. Please try again later', 500))
   }
   res
     .status(201)
     .json({ user: result.toObject({ getters: true }) })
 }
 
-const performLogIn = (req, res, next) => {
+const performLogIn = async (req, res, next) => {
   console.log('[USERS: /] POST /login')
+  // Validations
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
-    console.log(errors)
-    return next(new HttpError('Invalid inputs.', 422))
+    LoggingUtil.getUserReqMessage('performLogIn', errors)
+    return res.status(422).json(errors)
   }
   const { email, password } = req.body
   // Temporary Authentication
-  const identifiedUser = DUMMY_USERS.find(user => user.email === email)
-  if (!identifiedUser) {
-    return next(new HttpError('Invalid email', 401))
+  let identifiedUser
+  try {
+    identifiedUser = await User.findOne({ email: email })
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('performLogIn', error)
+    return next(new HttpError('Signing up failed. Please try again'))
   }
-  if (identifiedUser.password !== password) {
-    return next(new HttpError('Invalid password', 401))
+  if (!identifiedUser || identifiedUser.password !== password) {
+    return next(new HttpError('Invalid email or password', 401))
   }
+  // Execute
   return res
     .status(200)
-    .json({ message: 'Logged in successfully!' })
+    .json({ user: identifiedUser.toObject({ getters: true }) })
 }
 
 exports.getAllUsers = getAllUsers

@@ -15,6 +15,7 @@ const getPlaceById = async (req, res, next) => {
     place = await Place.findById(placeId)
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('getPlaceById', error)
+    return next(new HttpError('Retrieving place unsuccessful. Please try again later', 500))
   }
   if (!place) {
     return next(new HttpError('Could not find a place for the provided pid.', 404))
@@ -32,6 +33,7 @@ const getPlacesByUserId = async (req, res, next) => {
     places = await Place.find({ creator: userId })
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('getPlacesByUserId', error)
+    return next(new HttpError('Retrieving place unsuccessful. Please try again later', 500))
   }
   if (!places || places.length <= 0) {
     return next(new HttpError('Could not find a place for the provided uid.', 404))
@@ -64,7 +66,7 @@ const createPlace = async (req, res, next) => {
     result = await newPlace.save()
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('createPlace', error)
-    return next(new HttpError('Creating new Place unsuccessful', 500))
+    return next(new HttpError('Creating place unsuccessful. Please try again later', 500))
   }
   res
     .status(201)
@@ -99,6 +101,7 @@ const updatePlace = async (req, res, next) => {
     result = await updatedPlace.save()
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('updatePlace', error)
+    return next(new HttpError('Updating place unsuccessful. Please try again later', 500))
   }
   res
     .status(200)
@@ -123,6 +126,7 @@ const deletePlace = async (req, res, next) => {
     await deletedPlace.remove()
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('deleted', error)
+    return next(new HttpError('Deleting place unsuccessful. Please try again later', 500))
   }
   res
     .status(200)
