@@ -1,4 +1,4 @@
-const { Schema, model } = require('mongoose')
+const { Schema, model, Types } = require('mongoose')
 
 const placeSchema = Schema({
   title: {
@@ -28,8 +28,9 @@ const placeSchema = Schema({
     required: true
   },
   creator: {
-    type: String,
-    required: true
+    type: Types.ObjectId,
+    required: true,
+    ref: 'User'
   }
 })
 

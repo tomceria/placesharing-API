@@ -25,7 +25,7 @@ const performSignUp = async (req, res, next) => {
     LoggingUtil.getUserReqMessage('performSignUp', errors)
     return res.status(422).json(errors)
   }
-  const { name, email, password, places } = req.body
+  const { name, email, password } = req.body
   let existingUser
   try {
     existingUser = await User.findOne({ email: email })
@@ -42,7 +42,7 @@ const performSignUp = async (req, res, next) => {
     email,
     image: 'https://img.icons8.com/bubbles/2x/user.png',
     password,
-    places
+    places: []
   })
   let result = {}
   // Execute
