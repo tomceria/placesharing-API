@@ -11,7 +11,8 @@ router.post('/',
   [
     check('title').not().isEmpty().withMessage('is required'),
     check('description').isLength({ min: 5 }).withMessage('must be at least 5 characters long'),
-    check('address').not().isEmpty().withMessage('is required')
+    check('address').not().isEmpty().withMessage('is required'),
+    check('creator').not().isEmpty().withMessage('is required')
   ],
   placeController.createPlace)
 

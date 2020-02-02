@@ -1,9 +1,11 @@
+const mongoose = require('mongoose')
 const { validationResult } = require('express-validator')
 const { getCoordsForAddress } = require('../utils/location-utils')
 const LoggingUtil = require('../utils/logging-utils')
 
 const HttpError = require('../models/http-error')
 const Place = require('../models/place')
+const User = require('../models/user')
 
 const getPlaceById = async (req, res, next) => {
   const placeId = req.params.pid
@@ -44,6 +46,7 @@ const getPlacesByUserId = async (req, res, next) => {
 
 const createPlace = async (req, res, next) => {
   console.log('[PLACES: /] POST /')
+  const databaseUnsuccess = new HttpError('Creating place unsuccessful. Please try again later', 500)
   // Validations
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
@@ -52,6 +55,16 @@ const createPlace = async (req, res, next) => {
   }
   // Declarations
   const { title, description, address, creator } = req.body
+  let user
+  try {
+    user = await User.findById(creator)
+  } catch (error) {
+    LoggingUtil.getDatabaseInteractMsg('createPlace', error)
+    return next(databaseUnsuccess)
+  }
+  if (!user) {
+    return next(new HttpError('Provided Creator ID does not exist', 422))
+  }
   const newPlace = new Place({
     title,
     description,
@@ -63,10 +76,15 @@ const createPlace = async (req, res, next) => {
   let result = {}
   // Execute
   try {
-    result = await newPlace.save()
+    const session = await mongoose.startSession()
+    session.startTransaction()
+    result = await newPlace.save({ session })
+    user.places.push(newPlace)
+    await user.save({ session })
+    await session.commitTransaction()
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('createPlace', error)
-    return next(new HttpError('Creating place unsuccessful. Please try again later', 500))
+    return next(databaseUnsuccess)
   }
   res
     .status(201)
