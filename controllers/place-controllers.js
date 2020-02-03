@@ -30,14 +30,16 @@ const getPlacesByUserId = async (req, res, next) => {
   const userId = req.params.uid
   console.log(`[PLACES: /user/:uid] GET /${userId}`)
   // Validation
+  let user
   let places = []
   try {
-    places = await Place.find({ creator: userId })
+    user = await User.findById(userId).populate('places')
+    places = user.places
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('getPlacesByUserId', error)
     return next(new HttpError('Retrieving place unsuccessful. Please try again later', 500))
   }
-  if (!places || places.length <= 0) {
+  if (!user || places.length <= 0) {
     return next(new HttpError('Could not find a place for the provided uid.', 404))
   }
   // Execute
