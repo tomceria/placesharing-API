@@ -132,7 +132,7 @@ const deletePlace = async (req, res, next) => {
   // Validations
   let deletedPlace
   try {
-    deletedPlace = await Place.findById(placeId)
+    deletedPlace = await Place.findById(placeId).populate('creator')
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('deleted', error)
   }
@@ -141,7 +141,12 @@ const deletePlace = async (req, res, next) => {
   }
   // Execute
   try {
-    await deletedPlace.remove()
+    const session = await mongoose.startSession()
+    session.startTransaction()
+    deletedPlace.creator.places.pull(deletedPlace)
+    await deletedPlace.creator.save({ session })
+    await deletedPlace.remove({ session })
+    await session.commitTransaction()
   } catch (error) {
     LoggingUtil.getDatabaseInteractMsg('deleted', error)
     return next(new HttpError('Deleting place unsuccessful. Please try again later', 500))
